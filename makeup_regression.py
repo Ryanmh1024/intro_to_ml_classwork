@@ -1,5 +1,7 @@
 # %%
 
+
+
 # ============================================================================
 # Regression Overview — In-Class Live Coding Example
 # Dataset: Facebook Performance Metrics (UCI ML Repo ID 368)
@@ -13,14 +15,13 @@
 #   7. Polynomial Features from sklearn
 #   8. True vs. Predicted Plot with Train/Test Split
 # =============================================================================
-# %%
-
 
 # %%
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from ucimlrepo import fetch_ucirepo
+import seaborn as sns
 
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
@@ -34,18 +35,10 @@ facebook_metrics = fetch_ucirepo(id=368)
 X = facebook_metrics.data.features.copy()
 y = facebook_metrics.data.targets.copy()
 
-print(facebook_metrics.metadata)
-print(facebook_metrics.variables)
 
 # %%
-# Combine for easier exploration
-df = pd.concat([X, y], axis=1)
-df.info()
-
-# %%
-# Drop rows where target (Total Interactions) is missing
-df = df.dropna(subset=['Total Interactions'])
-print(df.shape)
+# Combine for easier exploration, using concat to keep features and target together
+df = ...
 
 # =============================================================================
 # SECTION 1: Kernel Density Plot
@@ -53,23 +46,14 @@ print(df.shape)
 # A kernel density plot (KDE) is a smoothed version of a histogram.
 # It estimates the probability density function of a continuous variable.
 # Use it to understand the shape and spread of a distribution before modeling.
+# %%
+# The raw distribution is heavily right-skewed — a common problem in regression.
+df[
 
 # %%
-# KDE of the target variable: Total Interactions
-fig, axes = plt.subplots(1, 2, figsize=(12, 4))
 
-df['Total Interactions'].plot.kde(ax=axes[0], color='steelblue')
-axes[0].set_title('KDE: Total Interactions (raw)')
-axes[0].set_xlabel('Total Interactions')
-
-# The raw distribution is heavily right-skewed — a common problem in regression.
 # Let's also look at Page total likes
-df['Page total likes'].plot.kde(ax=axes[1], color='coral')
-axes[1].set_title('KDE: Page Total Likes (raw)')
-axes[1].set_xlabel('Page Total Likes')
-
-plt.tight_layout()
-plt.show()
+df[
 
 # KEY POINT: Skewed distributions can violate regression assumptions.
 # We'll address this with log/arcsinh transformations in Section 5.
@@ -82,14 +66,16 @@ plt.show()
 # pd.get_dummies() does this automatically.
 
 # %%
-print(df['Type'].value_counts())   # Photo, Status, Link, Video
-print(df['Category'].value_counts())
+
+# Value counts
+print(df
 
 # %%
-# One-hot encode 'Type' — we get one binary column per category level
-type_dummies = pd.get_dummies(df['Type'], prefix='type')
-print(type_dummies.head(10))
-# Each row gets a 1 in the column matching its post type, 0 everywhere else.
+# One-hot encode 'Type' and 'Category' (creates new columns for each level), 
+# replace in the df, using pandas's get_dummies, four attributes, df, columns to encode, 
+# drop_first=True to avoid dummy variable trap, and prefix to add a prefix to the new columns
+df = pd.get_dummies(...
+                
 
 # =============================================================================
 # SECTION 3: Regression WITHOUT an Intercept in sklearn
@@ -100,17 +86,20 @@ print(type_dummies.head(10))
 # This is rarely appropriate unless theory demands it, but it's useful to know.
 
 # %%
+df.info()
+
+# %%
 # Simple example: predict Total Interactions from Page total likes
-X_simple = df[['Page total likes']].fillna(df['Page total likes'].median())
-y_target = df['Total Interactions']
+X_simple = df[  # sklearn expects 2D array for features
+y_target = df[
 
-# With intercept (default)
-model_with    = LinearRegression(fit_intercept=True).fit(X_simple, y_target)
+
+# With intercept (default), fit.intercept=true/false, (then).fit
+model_with = LinearRegression
 # Without intercept
-model_without = LinearRegression(fit_intercept=False).fit(X_simple, y_target)
+model_without = LinearRegression(
 
-print(f"WITH intercept    — coef: {model_with.coef_[0]:.4f},  intercept: {model_with.intercept_:.2f}")
-print(f"WITHOUT intercept — coef: {model_without.coef_[0]:.4f},  intercept: {model_without.intercept_:.2f}")
+print(coefficients
 
 # KEY POINT: Unless your domain knowledge justifies it, always keep the intercept.
 # Forcing through the origin biases the slope estimate when y != 0 at x=0.
@@ -126,18 +115,38 @@ print(f"WITHOUT intercept — coef: {model_without.coef_[0]:.4f},  intercept: {m
 # This is the key advantage over simple regression — we can isolate effects.
 
 # %%
-# Select a handful of numeric features
-numeric_features = ['Page total likes', 'Post Month', 'Post Weekday', 'Post Hour', 'Paid']
+# Select a handful of numeric features, that are most correlated with Total Interactions
+# correlation matrix
 
+corr_matrix = df.corr()
+corr_with_target = corr_matrix['Total Interactions'].abs().sort_values(ascending=False)
+
+
+# visualize the correlations with a matrix plot
+plt.figure(figsize=(8, 6))
+sns.heatmap(corr_matrix[numeric_features + ['Total Interactions']], annot=True, cmap='coolwarm', center=0)
+plt.title('Correlation Matrix')
+plt.show()
+
+# %%
+# select some kinda middle of the road features
+numeric_features = corr_with_target[5:11].index.tolist()  # Exclude the target variable itself   
+
+# now you try pick some real terrible variables and see what happens
+
+# %%
 df_mv = df[numeric_features + ['Total Interactions']].dropna()
 
 X_mv = df_mv[numeric_features]
 y_mv = df_mv['Total Interactions']
 
+# %%
 model_mv = LinearRegression().fit(X_mv, y_mv)
+
 
 coef_df = pd.DataFrame({'Feature': numeric_features, 'Coefficient': model_mv.coef_})
 print(coef_df.to_string(index=False))
+
 print(f"\nIntercept: {model_mv.intercept_:.2f}")
 print(f"R²: {model_mv.score(X_mv, y_mv):.4f}")
 
@@ -148,7 +157,7 @@ print(f"R²: {model_mv.score(X_mv, y_mv):.4f}")
 # SECTION 5: Log and arcsinh Transformations of Feature Variables
 # =============================================================================
 # Why transform?
-#   - Skewed predictors compress extreme values, improving linearity
+#   - Compress extreme values, improving linearity
 #   - Reduces the influence of outliers
 #   - Can improve model fit and residual normality
 #
@@ -157,64 +166,42 @@ print(f"R²: {model_mv.score(X_mv, y_mv):.4f}")
 #             arcsinh(x) ≈ log(2x) for large x, but handles 0s gracefully
 
 # %%
-# Look at the raw distribution of Page total likes
-fig, axes = plt.subplots(1, 3, figsize=(15, 4))
-
-df['Page total likes'].plot.kde(ax=axes[0], color='steelblue')
-axes[0].set_title('Raw: Page Total Likes')
-
-np.log(df['Page total likes'] + 1).plot.kde(ax=axes[1], color='green')
-axes[1].set_title('log(Page Total Likes + 1)')
-
-np.arcsinh(df['Page total likes']).plot.kde(ax=axes[2], color='purple')
-axes[2].set_title('arcsinh(Page Total Likes)')
-
-plt.tight_layout()
-plt.show()
+# Look at the raw distribution of Page total likes in a scatter plot against Total Interactions
+plt.scatter(df['Page total likes'], df['Total Interactions'], alpha=0.5, edgecolors='steelblue', facecolors='none')
+plt.xlabel('Page Total Likes')
 
 # %%
-# Apply log and arcsinh transformations and add to dataframe
-df['log_page_likes']     = np.log(df['Page total likes'] + 1)
+# now convert to log
+df['log_page_likes'] = np.log(df['Page total likes'] + 1)  # add 1 to avoid log(0)
+# histogram of log_page_likes
+df['log_page_likes'].plot.hist(color='steelblue', alpha=0.7)
+
+# %%
+# histogram of arcsinh_page_likes
 df['arcsinh_page_likes'] = np.arcsinh(df['Page total likes'])
-df['log_interactions']   = np.log(df['Total Interactions'] + 1)
-
-# Compare correlation with target before and after transformation
-print("Correlation with Total Interactions:")
-print(f"  Raw Page Likes:     {df['Page total likes'].corr(df['Total Interactions']):.4f}")
-print(f"  Log Page Likes:     {df['log_page_likes'].corr(df['Total Interactions']):.4f}")
-print(f"  arcsinh Page Likes: {df['arcsinh_page_likes'].corr(df['Total Interactions']):.4f}")
-
-# =============================================================================
-# SECTION 6: Dummy Variable Trap — Drop One Level as Reference
-# =============================================================================
-# When you create k dummies for a k-level categorical variable and include ALL
-# of them in a model WITH an intercept, you create perfect multicollinearity:
-#   type_Photo + type_Status + type_Link + type_Video = 1 (always)
-# This is the DUMMY VARIABLE TRAP — the model matrix becomes singular.
-#
-# Fix: drop one level (the "reference" category). Its effect is captured by
-# the intercept. Coefficients on remaining dummies are interpreted RELATIVE to
-# the dropped reference level.
+df['arcsinh_page_likes'].plot.hist(color='coral', alpha=0.7)
 
 # %%
-# Wrong: include all levels (trap)
-dummies_all = pd.get_dummies(df['Type'], prefix='type')
-print("All dummy columns:", dummies_all.columns.tolist())
-print("Sum across a row (always 1):\n", dummies_all.head(3).sum(axis=1).values)
+# histogram of original page total likes
+df['Page total likes'].plot.hist(color='gray', alpha=0.7)
 
 # %%
-# Correct: drop_first=True drops the first alphabetical level (Link → reference)
-dummies_ref = pd.get_dummies(df['Type'], prefix='type', drop_first=True)
-print("\nDummies after drop_first:", dummies_ref.columns.tolist())
-print("'Link' is the reference — its effect is absorbed into the intercept.")
-print(dummies_ref.head())
+# rerun the multivariate regression with the arcsinh transformation
+features = ['arcsinh_page_likes', 'Post Month', 'Post Weekday', 'Post Hour', 'Paid']
+X_trans = df[features].dropna()
+# use the same target variable, but drop rows with missing features
+y_trans = df.loc[X_trans.index, 'Total Interactions']
+model_trans = LinearRegression().fit(X_trans, y_trans)
 
-# Interpretation example:
-# type_Photo coefficient = expected difference in Total Interactions for
-# a Photo post vs. a Link post, holding everything else constant.
+# %%
+coef_df_trans = pd.DataFrame({'Feature': features, 'Coefficient': model_trans.coef_})
+print(coef_df_trans.to_string(index=False))
+
+print(f"\nIntercept: {model_trans.intercept_:.2f}")
+print(f"R²: {model_trans.score(X_trans, y_trans):.4f}")
 
 # =============================================================================
-# SECTION 7: Polynomial Features from sklearn
+# SECTION 6: Polynomial Features from sklearn
 # =============================================================================
 # Linear regression assumes a straight-line relationship between X and y.
 # If the true relationship is curved, we can add polynomial terms:
@@ -271,72 +258,35 @@ for degree in [1, 2, 3]:
 #   - Systematic deviations → bias or missing non-linearity
 
 # %%
-# Build a richer feature set using transformations and dummies
-df_model = df[['log_page_likes', 'arcsinh_page_likes',
-               'Post Month', 'Post Weekday', 'Post Hour', 'Paid',
-               'Type', 'Total Interactions']].dropna()
-
-# Dummy encode Type with reference level (drop_first)
-type_enc = pd.get_dummies(df_model['Type'], prefix='type', drop_first=True)
-
-X_full = pd.concat([
-    df_model[['log_page_likes', 'arcsinh_page_likes',
-              'Post Month', 'Post Weekday', 'Post Hour', 'Paid']],
-    type_enc
-], axis=1)
-
-y_full = df_model['Total Interactions']
-
-# %%
-# Train / Test Split (80% train, 20% test)
+# Use the same features as the multivariate regression listed in the numeric feature list
+X_final = df[numeric_features].dropna()
+y_final = df.loc[X_final.index, 'Total Interactions']
 X_train, X_test, y_train, y_test = train_test_split(
-    X_full, y_full, test_size=0.2, random_state=42)
-
-print(f"Train size: {X_train.shape[0]}  |  Test size: {X_test.shape[0]}")
-
-# Fit on training data only
-final_model = LinearRegression().fit(X_train, y_train)
-
-# Predict on test data
-y_pred = final_model.predict(X_test)
-
-# Evaluate
-rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-r2   = r2_score(y_test, y_pred)
-print(f"\nTest RMSE: {rmse:.2f}")
-print(f"Test R²:   {r2:.4f}")
-
-# %%
-# True vs. Predicted Plot
-fig, ax = plt.subplots(figsize=(7, 6))
-
-ax.scatter(y_test, y_pred, alpha=0.5, edgecolors='steelblue',
-           facecolors='none', linewidth=0.8, label='Predictions')
-
-# 45-degree reference line (perfect predictions)
-min_val = min(y_test.min(), y_pred.min())
-max_val = max(y_test.max(), y_pred.max())
-ax.plot([min_val, max_val], [min_val, max_val],
-        color='red', linestyle='--', linewidth=1.5, label='Perfect Fit')
-
-ax.set_xlabel('True Total Interactions', fontsize=12)
-ax.set_ylabel('Predicted Total Interactions', fontsize=12)
-ax.set_title(f'True vs. Predicted — Test Set\nRMSE={rmse:.1f}  R²={r2:.3f}', fontsize=13)
-ax.legend()
-plt.tight_layout()
+    X_final, y_final, test_size=0.2, random_state=42
+)
+model_final = LinearRegression().fit(X_train, y_train)
+y_pred = model_final.predict(X_test)    
+# True vs. Predicted plot
+plt.figure(figsize=(6, 6))
+plt.scatter(y_test, y_pred, alpha=0.5)
+plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
+plt.xlabel('True Values')
+plt.ylabel('Predicted Values')
+plt.title('True vs. Predicted Values')
 plt.show()
 
-# KEY POINT: Points scattered around the red line is good.
-# A fan shape (heteroskedasticity) or curve suggests a model limitation.
-# Here, extreme values are hard to predict — common with social media data.
 
 # %%
-# Coefficient table for the final model
-coef_final = pd.DataFrame({
-    'Feature': X_full.columns,
-    'Coefficient': final_model.coef_
-}).sort_values('Coefficient', key=abs, ascending=False)
+# calculate and print evaluation metrics, include RSME and R²
 
-print("\nFinal Model Coefficients (sorted by magnitude):")
-print(coef_final.to_string(index=False))
-print(f"\nIntercept: {final_model.intercept_:.2f}")
+mse = mean_squared_error(y_test, y_pred)
+rmse = np.sqrt(mse)
+r2 = r2_score(y_test, y_pred)
+print(f"Mean Squared Error: {mse:.2f}")
+print(f"Root Mean Squared Error: {rmse:.2f}")
+print(f"R² Score: {r2:.4f}")
+
+# range of the target variable in the test set
+print(f"Range of Total Interactions in Test Set: {y_test.min()} to {y_test.max()}")
+
+# %%
