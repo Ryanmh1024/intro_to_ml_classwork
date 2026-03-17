@@ -312,6 +312,8 @@ print(f"R² Score: {r2:.4f}")
 # range of the target variable in the test set
 print(f"Range of Total Interactions in Test Set: {y_test.min()} to {y_test.max()}")
 
+
+
 # %% ######################################################
 # DEMO: When Polynomial Features Make Sense
 # Fabricated example: Facebook-style post engagement by hour of day
