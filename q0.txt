@@ -1,0 +1,23 @@
+1. What makes a model "linear"? "Linear" in what?
+
+The model is linear because when variables are chosen, the best slope is found and the best y-intercept is found to produce a linear line that represents how that variable predicts the target variable.
+
+2. How do you interpret the coefficient for a dummy/one-hot-encoded variable? (This is a trick question, and the trick involves how you handle the intercept of the model.) There's further explanation at the end of this document, if needed.
+
+The coefficient is basically indicative of the column that is dropped so that multicollinearlity is avoided. It is the difference between the dropped column and the specific one-hot-encoded variable currently being used.
+
+3. Can linear regression be used for classification? Explain why, or why not.
+
+Yes, by adding a threshold so that anything above a certain threshold is a positive classification and everything below is a negative classification.
+
+4. If you have a high accuracy on training but low on testing, what might be the problem? It also might be you see a pattern in the residuals. 
+
+This could be a cause of overfitting because the model has grown so accustomed to the training data and has molded to it that once it is given new data, it predicts it very poorly.
+
+5. Review this page: [Non-Linear with Linear](https://inria.github.io/scikit-learn-mooc/python_scripts/linear_regression_non_linear_link.html) What are two ways to incorporate nonlinear relationships between your target/response/dependent/outcome variable $y$ and your features/control/response/independent variables $x$?
+
+I could incorporate new features that address the nonlinear relationships or I could use a different model, like polynomial regression.
+
+6. What is the interpretation of the intercept? A slope coefficient for a variable? The coefficient for a dummy/one-hot-encoded variable?
+
+The intercept represents the predicted value of the target variable assuming all features are equal to 0. The slope coefficient represents the amount of increase in the target variable for every unit of increase in the feature variable. The coefficient for a dummy variable is the difference between it and the dropped column to ensure there is no multicollinearity in the model.
